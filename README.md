@@ -1,7 +1,11 @@
 # Halo2 Examples and Other Experiments
 This repository is a fork of https://github.com/icemelon/halo2-examples without the `range_check` example.
 
-Modules 
+The modules `fibonacci` and `is_zero_example` are from the `halo2-examples` repo with minor changes (file renaming and reorganization).
+
+The other modules are my experiments with the Halo2 API. For example, the `fibonacci_squares` module is a minor tweak of the `fibonacci` module.
+
+## Modules 
 - `fibonacci`
   - `fib_three_column.rs`: Fibonacci series using three advice columns
   - `fib_one_column.rs`: Fibonacci series using one advice column
