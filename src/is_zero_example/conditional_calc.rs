@@ -131,4 +131,23 @@ mod tests {
         let prover = MockProver::run(4, &circuit, vec![]).unwrap();
         prover.assert_satisfied();
     }
+
+    #[cfg(feature = "dev-graph")]
+    #[test]
+    fn plot_is_zero() {
+        use plotters::prelude::*;
+
+        let root = BitMapBackend::new("iszero-layout.png", (1024, 3096)).into_drawing_area();
+        root.fill(&WHITE).unwrap();
+        let root = root.titled("Function Calculation Layout", ("sans-serif", 60)).unwrap();
+
+        let circuit = FunctionCircuit::<Fp> {
+            a: Fp::default(),
+            b: Fp::default(),
+            c: Fp::default(),
+        };
+        halo2_proofs::dev::CircuitLayout::default()
+            .render(4, &circuit, &root)
+            .unwrap();
+    }
 }

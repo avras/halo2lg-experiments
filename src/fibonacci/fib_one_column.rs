@@ -173,4 +173,18 @@ mod tests {
         // uncomment the following line and the assert will fail
         // _prover.assert_satisfied();
     }
+
+    #[cfg(feature = "dev-graph")]
+    #[test]
+    fn plot_fibo1() {
+        use plotters::prelude::*;
+        let root = BitMapBackend::new("fib1-layout.png", (1024, 3096)).into_drawing_area();
+        root.fill(&WHITE).unwrap();
+        let root = root.titled("Fib 1 Layout", ("sans-serif", 60)).unwrap();
+
+        let circuit = MyCircuit::<Fp>(PhantomData);
+        halo2_proofs::dev::CircuitLayout::default()
+            .render(4, &circuit, &root)
+            .unwrap();
+    }
 }

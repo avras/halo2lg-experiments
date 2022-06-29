@@ -8,9 +8,37 @@ The other modules are my experiments with the Halo2 API. For example, the `fibon
 ## Modules 
 - `fibonacci`
   - `fib_three_column.rs`: Fibonacci series using three advice columns
+    ```
+    cargo test -- --nocapture test_fib3
+    ```
+    For the circuit layout, run
+    ```
+    cargo test --all-features -- --nocapture plot_fibo3
+    ```
   - `fib_one_column.rs`: Fibonacci series using one advice column
+    ```
+    cargo test -- --nocapture test_fib1
+    ```
+    For the circuit layout, run
+    ```
+    cargo test --all-features -- --nocapture plot_fibo1
+    ```
 - `is_zero_example`
   - This example checks the calculation of `f(a,b,c) = (a == b)? c : a-b`. It illustrates the usage of the `is_zero` gadget.
+    ```
+    cargo test -- --nocapture test_is_zero
+    ```
+    For the circuit layout, run
+    ```
+    cargo test --all-features -- --nocapture plot_is_zero
+    ```
 - `fibonacci_squares`
   - `fib_squares_three_column.rs`: Fibonacci squares series ($a_{i+2} =a_{i+1}^2+a_i^2$) using three advice columns
+    ```
+    cargo test -- --nocapture test_fibsquare3
+    ```
+    For the circuit layout, run
+    ```
+    cargo test --all-features -- --nocapture plot_fibsquares3
+    ```
   - The expected output is generated using `testcases/fib_squares.sage`
