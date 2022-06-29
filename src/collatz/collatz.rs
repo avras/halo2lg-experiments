@@ -7,7 +7,8 @@ struct ACell<F: FieldExt>(AssignedCell<F, F>);
 
 #[derive(Debug, Clone)]
 struct CollatzConfig<const WIDTH: usize> {
-    pub advice: [Column<Advice>; WIDTH],
+    // Option is to allow initialization with [None; WIDTH] in CollatzCircuit::configure
+    pub advice: [Option<Column<Advice>>; WIDTH],
     pub s_all_rows: Selector,
     pub s_last_row: Selector,
     pub s_non_last_row: Selector,
@@ -31,7 +32,7 @@ impl<F: FieldExt, const WIDTH: usize> CollatzChip<F, WIDTH> {
 
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
-        advice: [Column<Advice>; WIDTH],
+        advice: [Option<Column<Advice>>; WIDTH],
         //instance: Column<Instance>,
     ) -> CollatzConfig<WIDTH> {
         let s_all_rows = meta.selector();
@@ -40,7 +41,7 @@ impl<F: FieldExt, const WIDTH: usize> CollatzChip<F, WIDTH> {
 
         //meta.enable_equality(instance);
         for column in advice {
-            meta.enable_equality(column);
+            meta.enable_equality(column.unwrap());
         }
 
         // Constrain all the advice columns to be bits
@@ -50,7 +51,7 @@ impl<F: FieldExt, const WIDTH: usize> CollatzChip<F, WIDTH> {
             let mut constraints = vec![];
 
             for i in 0..WIDTH {
-                bit = meta.query_advice(advice[i], Rotation::cur());
+                bit = meta.query_advice(advice[i].unwrap(), Rotation::cur());
                 // s * bit * (1-bit) = 0
                 constraints.push(s.clone() * bit.clone() * (Expression::Constant(F::one()) - bit));
             }
@@ -64,11 +65,11 @@ impl<F: FieldExt, const WIDTH: usize> CollatzChip<F, WIDTH> {
             let mut constraints = vec![];
 
             for i in 0..WIDTH-1 {
-                bit = meta.query_advice(advice[i], Rotation::cur());
+                bit = meta.query_advice(advice[i].unwrap(), Rotation::cur());
                 // s*bit = 0
                 constraints.push(s.clone() * bit);
             }
-            bit = meta.query_advice(advice[WIDTH-1], Rotation::cur());
+            bit = meta.query_advice(advice[WIDTH-1].unwrap(), Rotation::cur());
             // s * (1-bit) = 0
             constraints.push(s.clone() * (Expression::Constant(F::one()) - bit));
             constraints
@@ -78,9 +79,9 @@ impl<F: FieldExt, const WIDTH: usize> CollatzChip<F, WIDTH> {
         // to follow the Collatz sequence rules
         // If previous element n is even, current element is n/2
         // If previous element n is odd, current element is 3*n+1
-        meta.create_gate("last advice row equals a 1", |meta| {
+        meta.create_gate("Collatz sequence rule", |meta| {
             let s = meta.query_selector(s_non_last_row);
-            let lsb = meta.query_advice(advice[WIDTH-1], Rotation::cur()); // least significant bit
+            let lsb = meta.query_advice(advice[WIDTH-1].unwrap(), Rotation::cur()); // least significant bit
             let mut bit;
             let mut current_element = Expression::Constant(F::zero());
             let mut next_element = Expression::Constant(F::zero());
@@ -91,16 +92,16 @@ impl<F: FieldExt, const WIDTH: usize> CollatzChip<F, WIDTH> {
 
             // Calculate integer value of current advice row
             for i in WIDTH-1..=0 {
-                bit = meta.query_advice(advice[i], Rotation::cur());
-                current_element = bit * coeff.clone();
+                bit = meta.query_advice(advice[i].unwrap(), Rotation::cur());
+                current_element = current_element + bit * coeff.clone();
                 coeff = coeff * Expression::Constant(F::from(2));
             }
             
             // Calculate integer value of next advice row
             coeff = Expression::Constant(F::one());
             for i in WIDTH-1..=0 {
-                bit = meta.query_advice(advice[i], Rotation::next());
-                next_element = bit * coeff.clone();
+                bit = meta.query_advice(advice[i].unwrap(), Rotation::next());
+                next_element = next_element + bit * coeff.clone();
                 coeff = coeff * Expression::Constant(F::from(2));
             }
 
@@ -133,12 +134,12 @@ impl<F: FieldExt, const WIDTH: usize> CollatzChip<F, WIDTH> {
                 let mut next_value;
 
                 for row in 0..nrows {
-                    self.config.s_all_rows.enable(&mut region, 0)?;
+                    self.config.s_all_rows.enable(&mut region, row)?;
                     if row < nrows-1 {
-                        self.config.s_non_last_row.enable(&mut region, 0)?;
+                        self.config.s_non_last_row.enable(&mut region, row)?;
                     }
                     if row == nrows-1 {
-                        self.config.s_last_row.enable(&mut region, 0)?;
+                        self.config.s_last_row.enable(&mut region, row)?;
                     }
 
                     if current_value.is_even().into() {
@@ -160,7 +161,7 @@ impl<F: FieldExt, const WIDTH: usize> CollatzChip<F, WIDTH> {
                         
                         let _a =
                         region
-                        .assign_advice(|| format!("row {:?} bit {:?}", row, i), self.config.advice[i], row, || Value::known(bit))?;
+                        .assign_advice(|| format!("row {:?} bit {:?}", row, i), self.config.advice[i].unwrap(), row, || Value::known(bit))?;
                     }
                     current_value = next_value;
                 }
@@ -186,11 +187,10 @@ impl <F: FieldExt, const WIDTH: usize> Circuit<F> for CollatzCircuit<F, WIDTH> {
     }
 
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
-        let mut advice_vec = vec![];
-        for _i in 0..WIDTH {
-            advice_vec.push(meta.advice_column());
+        let mut advice: [Option<Column<Advice>>; WIDTH] = [None; WIDTH];
+        for i in 0..WIDTH {
+            advice[i] = Some(meta.advice_column());
         }
-        let advice: [Column<Advice>; WIDTH] = advice_vec.try_into().unwrap();
         //let instance = meta.instance_column();
         CollatzChip::configure(meta, advice, /*instance*/)
     }
@@ -216,10 +216,10 @@ mod tests {
  
     #[test]
     fn test_collatz() {
-        let k = 4;
+        let k = 16;
         const WIDTH: usize = 6;
 
-        let circuit = CollatzCircuit::<Fp, WIDTH> {
+        let circuit: CollatzCircuit<Fp, WIDTH> = CollatzCircuit {
             initial_value: Fp::from(52),
             nrows: 12,
         };
