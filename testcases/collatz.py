@@ -6,7 +6,7 @@
 # Example with n = 52 
 # 52 -> 26 -> 13 -> 40 -> 20 -> 10 -> 5 -> 16 -> 8 -> 4 -> 2 -> 1
 
-from math import ceil, log2
+from math import floor, log2
 import sys
 
 def collatz_sequence(n):
@@ -29,5 +29,5 @@ print('n =', n)
 cseq = collatz_sequence(n)
 print(cseq)
 print('Length of sequence =', len(cseq))
-print('Number of bits required to represent largest sequence member =', ceil(log2(max(cseq))))
+print('Number of bits required to represent largest sequence member =', floor(log2(max(cseq)))+1)
 
