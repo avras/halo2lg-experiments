@@ -91,7 +91,7 @@ impl<F: FieldExt, const WIDTH: usize> CollatzChip<F, WIDTH> {
             let three = Expression::Constant(F::from(3));
 
             // Calculate integer value of current advice row
-            for i in WIDTH-1..=0 {
+            for i in (0..WIDTH).rev() {
                 bit = meta.query_advice(advice[i].unwrap(), Rotation::cur());
                 current_element = current_element + bit * coeff.clone();
                 coeff = coeff * Expression::Constant(F::from(2));
@@ -99,7 +99,7 @@ impl<F: FieldExt, const WIDTH: usize> CollatzChip<F, WIDTH> {
             
             // Calculate integer value of next advice row
             coeff = Expression::Constant(F::one());
-            for i in WIDTH-1..=0 {
+            for i in (0..WIDTH).rev() {
                 bit = meta.query_advice(advice[i].unwrap(), Rotation::next());
                 next_element = next_element + bit * coeff.clone();
                 coeff = coeff * Expression::Constant(F::from(2));
@@ -150,7 +150,7 @@ impl<F: FieldExt, const WIDTH: usize> CollatzChip<F, WIDTH> {
 
                     let mut bit;
 
-                    for i in WIDTH-1..=0 {
+                    for i in (0..WIDTH).rev() {
                         if current_value.is_even().into() {
                             bit = F::zero();
                             current_value = current_value * F::TWO_INV;
