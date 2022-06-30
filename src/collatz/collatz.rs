@@ -227,5 +227,23 @@ mod tests {
         let prover = MockProver::run(k, &circuit, vec![]).unwrap();
         prover.assert_satisfied();
     }
+
+    #[cfg(feature = "dev-graph")]
+    #[test]
+    fn plot_collatz() {
+        use plotters::prelude::*;
+        let root = BitMapBackend::new("collatz-layout.png", (1024, 3096)).into_drawing_area();
+        root.fill(&WHITE).unwrap();
+        let root = root.titled("Collatz Layout", ("sans-serif", 60)).unwrap();
+
+        const WIDTH: usize = 6;
+        let circuit = CollatzCircuit::<Fp, WIDTH>{
+            initial_value: Fp::from(52),
+            nrows: 12
+        };
+        halo2_proofs::dev::CircuitLayout::default()
+            .render(4, &circuit, &root)
+            .unwrap();
+    }
 }
 
