@@ -3,7 +3,10 @@ This repository is a fork of https://github.com/icemelon/halo2-examples without 
 
 The modules `fibonacci` and `is_zero_example` are from the `halo2-examples` repo with minor changes (file renaming and reorganization).
 
-The other modules are my experiments with the Halo2 API. The `fibonacci_squares` module is a minor tweak of the `fibonacci` module. The `collatz` module is inspired by the Collatz sequence example described [here](https://medium.com/starkware/arithmetization-i-15c046390862).
+The other modules are my experiments with the Halo2 API.
+- The `fibonacci_squares` module is a minor tweak of the `fibonacci` module.
+- The `collatz` module is inspired by the Collatz sequence example described [here](https://medium.com/starkware/arithmetization-i-15c046390862).
+- The `simple_example` module is a clone of [halo2/halo2_proofs/examples/simple-example.rs](https://github.com/zcash/halo2/blob/main/halo2_proofs/examples/simple-example.rs) with changes to plot the circuit layout. This example illustrates how multiple calls to the `mul` instruction are laid out in the circuit.
 
 ## Modules 
 - `fibonacci`
@@ -50,4 +53,13 @@ The other modules are my experiments with the Halo2 API. The `fibonacci_squares`
     For the circuit layout, run
     ```
     cargo test --all-features -- --nocapture plot_collatz
+    ```
+- `simple_example`
+  - Clone of [halo2/halo2_proofs/examples/simple-example.rs](https://github.com/zcash/halo2/blob/main/halo2_proofs/examples/simple-example.rs) with changes to plot the circuit layout.
+    ```
+    cargo test -- --nocapture test_simple_example
+    ```
+    For the circuit layout, run
+    ```
+    cargo test --all-features -- --nocapture plot_simple_example
     ```
