@@ -354,8 +354,8 @@ mod tests {
 
         let circuit = MyCircuit::<Fp>{
             constant: Fp::zero(),
-            a: None,
-            b: None,
+            a: Value::unknown(),
+            b: Value::unknown(),
         };
         halo2_proofs::dev::CircuitLayout::default()
             .render(4, &circuit, &root)
