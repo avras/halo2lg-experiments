@@ -53,8 +53,8 @@ impl<F: FieldExt> MiMC5Chip<F> {
 
         // instance      | state                    | key_column   | round_constants   | selector
         // message       | x0 = message             |  key         |     c0            | 
-        // key           | x1 = (x0+key+c0)^5       |  key         |     c1            | s_in_rounds
-        // final_output  | x2 = (x1+key+c1)^5       |  key         |     c2            | s_in_rounds
+        // final_output  | x1 = (x0+key+c0)^5       |  key         |     c1            | s_in_rounds
+        //               | x2 = (x1+key+c1)^5       |  key         |     c2            | s_in_rounds
         //               | x3 = (x2+key+c2)^5       |  key         |     c3            | s_in_rounds
         //               | x4 = (x3+key+c3)^5       |  key         |     c4            | s_in_rounds
         //               |      :                   |  :           |     :             |     :      
@@ -100,11 +100,11 @@ impl<F: FieldExt> MiMC5Chip<F> {
     pub fn assign(
         &self,
         mut layouter: impl Layouter<F>,
-        initial_value: F,
+        message: F,
         key: F,
         round_constants: &Vec<F>,
         num_rounds: usize,
-    ) -> Result<(AssignedCell<F,F>, AssignedCell<F,F>, AssignedCell<F,F>), Error> {
+    ) -> Result<(AssignedCell<F,F>, AssignedCell<F,F>), Error> {
         layouter.assign_region(
             || "MiMC5 table",
             |mut region| {
@@ -112,25 +112,24 @@ impl<F: FieldExt> MiMC5Chip<F> {
 
                 let msg_cell = 
                 region.assign_advice_from_instance(
-                    || "message to be encrypted/hashed",
+                    || "message to be encrypted",
                     self.config.instance,
                     0,
                     self.config.state,
                     0
                 )?;
 
-                let key_cell = 
-                region.assign_advice_from_instance(
-                    || "key for encryption",
-                    self.config.instance,
-                    1,
+                region.assign_advice(
+                    || format!("key in row 0"),
                     self.config.key_column,
-                    0
+                    0,
+                    || Value::known(key)
                 )?;
+
 
                 let pow_5 = |v: F| { v*v*v*v*v };
 
-                let mut current_state = initial_value;
+                let mut current_state = message;
                 for i in 1..=num_rounds {
                     self.config.s_in_rounds.enable(&mut region, i)?;
                     region.assign_fixed(
@@ -164,7 +163,7 @@ impl<F: FieldExt> MiMC5Chip<F> {
                     num_rounds+1,
                     || Value::known(current_state)
                 )?;
-                Ok((msg_cell, key_cell, final_state))
+                Ok((msg_cell, final_state))
             }
         )
     }
@@ -210,7 +209,7 @@ impl <F: FieldExt> Circuit<F> for MiMC5Circuit<F> {
     ) -> Result<(), Error> {
         let chip = MiMC5Chip::construct(config);
 
-        let (msg, key, final_output) = chip.assign(
+        let (msg, final_output) = chip.assign(
             layouter.namespace(|| "entire table"),
             self.message,
             self.key,
@@ -219,11 +218,9 @@ impl <F: FieldExt> Circuit<F> for MiMC5Circuit<F> {
         )?;
 
         chip.expose_public(layouter.namespace(|| "message"), msg, 0)?;
-        chip.expose_public(layouter.namespace(|| "key"), key, 1)?;
-        chip.expose_public(layouter.namespace(|| "out"), final_output, 2)?;
+        chip.expose_public(layouter.namespace(|| "out"), final_output, 1)?;
         // instance      | state 
         // message       |
-        // key           |
         // final_output  |
 
         Ok(())
@@ -240,7 +237,7 @@ mod tests {
 
  
     #[test]
-    fn test_mimc5_encrypt() {
+    fn test_mimc5_cipher() {
         let k = 7;
 
         let msg = Fp::from(0);
@@ -255,7 +252,7 @@ mod tests {
             num_rounds: NUM_ROUNDS,
         };
 
-        let public_input = vec![msg, key, output];
+        let public_input = vec![msg, output];
 
         let prover = MockProver::run(k, &circuit, vec![public_input.clone()]).unwrap();
         prover.assert_satisfied();
@@ -264,12 +261,12 @@ mod tests {
 
     #[cfg(feature = "dev-graph")]
     #[test]
-    fn plot_mimc5() {
+    fn plot_mimc5_cipher() {
         use plotters::prelude::*;
         let k = 7;
-        let root = BitMapBackend::new("mimc5-layout.png", (1024, 3096)).into_drawing_area();
+        let root = BitMapBackend::new("mimc5-cipher-layout.png", (1024, 3096)).into_drawing_area();
         root.fill(&WHITE).unwrap();
-        let root = root.titled("MiMC Layout", ("sans-serif", 60)).unwrap();
+        let root = root.titled("MiMC5 Cipher Layout", ("sans-serif", 60)).unwrap();
 
         let circuit = MiMC5Circuit {
             message: Fp::zero(),
