@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use halo2_proofs::{
     arithmetic::FieldExt,
     plonk::{

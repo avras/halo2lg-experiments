@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 use halo2_proofs::arithmetic::FieldExt;
 
 #[cfg(test)]

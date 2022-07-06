@@ -1,8 +1,10 @@
 use pasta_curves::pallas;
 
 // Number of MiMC5 round constants = 110
+#[allow(dead_code)]
 pub(crate) const NUM_ROUNDS: usize = 110;
 
+#[allow(dead_code)]
 pub(crate) const ROUND_CONSTANTS: [pallas::Base; NUM_ROUNDS] = 
 [
     pallas::Base::from_raw([
