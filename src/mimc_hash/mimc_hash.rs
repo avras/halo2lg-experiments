@@ -10,9 +10,9 @@ use halo2_proofs::{
         Layouter, AssignedCell, Value,
     },
 };
-use pasta_curves::Fp;
+use pasta_curves::{Fp, Fq};
 
-use super::pallas_round_constants::MIMC_HASH_PALLAS_ROUND_CONSTANTS;
+use super::round_constants::{MIMC_HASH_PALLAS_ROUND_CONSTANTS, MIMC_HASH_VESTA_ROUND_CONSTANTS};
 
 
 #[allow(unused_variables, dead_code)]
@@ -122,17 +122,14 @@ pub trait MiMC5HashChip<F: FieldExt> {
     }
 }
 
-#[derive(Clone)]
-pub struct MiMC5HashPallasChip<F: FieldExt> {
-    config: MiMC5HashConfig,
-    _marker: PhantomData<F>,
+pub struct MiMC5HashPallasChip {
+    config: MiMC5HashConfig
 }
 
-impl MiMC5HashChip<Fp> for MiMC5HashPallasChip<Fp> {
+impl MiMC5HashChip<Fp> for MiMC5HashPallasChip {
     fn construct(config: MiMC5HashConfig) -> Self {
         Self {
             config,
-            _marker: PhantomData,
         }
     }
 
@@ -145,13 +142,33 @@ impl MiMC5HashChip<Fp> for MiMC5HashPallasChip<Fp> {
     }
 }
 
+pub struct MiMC5HashVestaChip {
+    config: MiMC5HashConfig
+}
+
+impl MiMC5HashChip<Fq> for MiMC5HashVestaChip {
+    fn construct(config: MiMC5HashConfig) -> Self {
+        Self {
+            config,
+        }
+    }
+
+    fn get_config(&self) -> &MiMC5HashConfig {
+        &self.config
+    }
+
+    fn get_round_constants() -> Vec<Fq> {
+        MIMC_HASH_VESTA_ROUND_CONSTANTS.to_vec()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::mimc_hash::primitives::mimc5_hash;
 
     use super::*;
     use halo2_proofs::{dev::MockProver, pasta::Fp, plonk::Circuit, circuit::SimpleFloorPlanner};
-    use crate::mimc_hash::pallas_round_constants::{NUM_ROUNDS, MIMC_HASH_PALLAS_ROUND_CONSTANTS};
+    use crate::mimc_hash::round_constants::{NUM_ROUNDS, MIMC_HASH_PALLAS_ROUND_CONSTANTS, MIMC_HASH_VESTA_ROUND_CONSTANTS};
 
     #[derive(Default)]
     struct MiMC5HashPallasCircuit {
@@ -170,7 +187,7 @@ mod tests {
         fn configure(meta: &mut ConstraintSystem<Fp>) -> Self::Config {
             let state = meta.advice_column();
             let round_constants = meta.fixed_column();
-            MiMC5HashPallasChip::<Fp>::configure(meta, state, round_constants)
+            MiMC5HashPallasChip::configure(meta, state, round_constants)
         }
 
         fn synthesize(
@@ -220,6 +237,75 @@ mod tests {
         prover.assert_satisfied();
 
     }
+
+    #[derive(Default)]
+    struct MiMC5HashVestaCircuit {
+        pub message: Fq,
+        pub message_hash: Fq,
+    }
+
+    impl Circuit<Fq> for MiMC5HashVestaCircuit {
+        type Config = MiMC5HashConfig;
+        type FloorPlanner = SimpleFloorPlanner;
+        
+        fn without_witnesses(&self) -> Self {
+            Self::default()
+        }
+
+        fn configure(meta: &mut ConstraintSystem<Fq>) -> Self::Config {
+            let state = meta.advice_column();
+            let round_constants = meta.fixed_column();
+            MiMC5HashVestaChip::configure(meta, state, round_constants)
+        }
+
+        fn synthesize(
+            &self,
+            config: Self::Config,
+            mut layouter: impl Layouter<Fq>,
+        ) -> Result<(), Error> {
+            let chip = MiMC5HashVestaChip::construct(config.clone());
+
+            let msg_hash = chip.hash_message(
+                layouter.namespace(|| "entire table"),
+                self.message,
+            )?;
+
+            layouter.assign_region(
+                || "constrain output", 
+                |mut region| {
+                    let expected_output = region.assign_advice(
+                        || "load output", 
+                        config.state,
+                        0,
+                        || Value::known(self.message_hash),
+                    )?;
+                    region.constrain_equal(msg_hash.cell(), expected_output.cell())
+                }
+            )?;
+
+            Ok(())
+        }
+    }
+
+     
+    #[test]
+    fn test_mimc5_vesta_hash() {
+        let k = 7;
+
+        let msg = Fq::from(0);
+        let mut output = msg;
+        mimc5_hash::<Fq, { NUM_ROUNDS }>(&mut output, MIMC_HASH_VESTA_ROUND_CONSTANTS);
+
+        let circuit = MiMC5HashVestaCircuit {
+            message: msg,
+            message_hash: output,
+        };
+
+        let prover = MockProver::run(k, &circuit, vec![]).unwrap();
+        prover.assert_satisfied();
+
+    }
+
 
     #[cfg(feature = "dev-graph")]
     #[test]
