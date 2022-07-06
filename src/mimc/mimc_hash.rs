@@ -162,11 +162,11 @@ impl MiMC5HashChip<Fq> for MiMC5HashVestaChip {
 
 #[cfg(test)]
 mod tests {
-    use crate::mimc_hash::primitives::mimc5_hash;
+    use crate::mimc::primitives::mimc5_hash;
 
     use super::*;
     use halo2_proofs::{dev::MockProver, pasta::Fp, plonk::Circuit, circuit::SimpleFloorPlanner};
-    use crate::mimc_hash::round_constants::{NUM_ROUNDS, MIMC_HASH_PALLAS_ROUND_CONSTANTS, MIMC_HASH_VESTA_ROUND_CONSTANTS};
+    use crate::mimc::round_constants::{NUM_ROUNDS, MIMC_HASH_PALLAS_ROUND_CONSTANTS, MIMC_HASH_VESTA_ROUND_CONSTANTS};
 
     #[derive(Default)]
     struct MiMC5HashPallasCircuit {
