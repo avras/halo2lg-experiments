@@ -12,7 +12,7 @@ use halo2_proofs::{
 };
 use pasta_curves::Fp;
 
-use super::pallas_round_constants::ROUND_CONSTANTS;
+use super::pallas_round_constants::MIMC_HASH_PALLAS_ROUND_CONSTANTS;
 
 
 #[allow(unused_variables, dead_code)]
@@ -141,7 +141,7 @@ impl MiMC5HashChip<Fp> for MiMC5HashPallasChip<Fp> {
     }
 
     fn get_round_constants() -> Vec<Fp> {
-        ROUND_CONSTANTS.to_vec()
+        MIMC_HASH_PALLAS_ROUND_CONSTANTS.to_vec()
     }
 }
 
@@ -151,7 +151,7 @@ mod tests {
 
     use super::*;
     use halo2_proofs::{dev::MockProver, pasta::Fp, plonk::Circuit, circuit::SimpleFloorPlanner};
-    use crate::mimc_hash::pallas_round_constants::{NUM_ROUNDS, ROUND_CONSTANTS};
+    use crate::mimc_hash::pallas_round_constants::{NUM_ROUNDS, MIMC_HASH_PALLAS_ROUND_CONSTANTS};
 
     #[derive(Default)]
     struct MiMC5HashPallasCircuit {
@@ -209,7 +209,7 @@ mod tests {
 
         let msg = Fp::from(0);
         let mut output = msg;
-        mimc5_hash::<Fp, { NUM_ROUNDS }>(&mut output, ROUND_CONSTANTS);
+        mimc5_hash::<Fp, { NUM_ROUNDS }>(&mut output, MIMC_HASH_PALLAS_ROUND_CONSTANTS);
 
         let circuit = MiMC5HashPallasCircuit {
             message: msg,
