@@ -4,3 +4,4 @@ mod fibonacci_squares;
 mod collatz;
 mod simple_example;
 mod mimc;
+mod mimc_hash;
