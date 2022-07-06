@@ -186,11 +186,11 @@ impl <F: FieldExt> Circuit<F> for MiMC5HashCircuit<F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::mimc::primitives::mimc5_hash;
+    use crate::mimc_pallas::primitives::mimc5_hash;
 
     use super::*;
     use halo2_proofs::{dev::MockProver, pasta::Fp};
-    use crate::mimc::pallas_round_constants::{NUM_ROUNDS, ROUND_CONSTANTS};
+    use crate::mimc_pallas::pallas_round_constants::{NUM_ROUNDS, ROUND_CONSTANTS};
 
  
     #[test]
